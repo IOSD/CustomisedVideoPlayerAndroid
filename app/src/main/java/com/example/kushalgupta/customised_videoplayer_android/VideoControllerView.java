@@ -1,5 +1,6 @@
 package com.example.kushalgupta.customised_videoplayer_android;
 
+import android.media.MediaPlayer;
 import android.widget.FrameLayout;
 
 import android.content.Context;
@@ -27,7 +28,6 @@ import java.util.Formatter;
 import java.util.Locale;
 
 
-
 public class VideoControllerView extends FrameLayout {
     private static final String TAG = "VideoControllerView";
 
@@ -36,7 +36,7 @@ public class VideoControllerView extends FrameLayout {
     private ViewGroup mAnchor;
     private View mRoot, mRoot2;
     private ProgressBar mProgress;
-    private TextView mEndTime, mCurrentTime, mOnScreenTime;
+    private TextView mEndTime, mCurrentTime, mOnScreenTime,onScreenName,timeRem,timeElapse;
     private boolean mShowing;
     private boolean mDragging;
     private static final int sDefaultTimeout = 3000;
@@ -52,12 +52,14 @@ public class VideoControllerView extends FrameLayout {
     private ImageButton mFfwdButton;
     private ImageButton mRewButton;
     private ImageButton nextVideoButton;
+    private String vidName;
     private ImageButton prevVideoButton;
     // private ImageButton         mNextButton;
     //private ImageButton         mPrevButton;
     // private ImageButton         mFullscreenButton;
     private Handler mHandler = new MessageHandler(this);
-    private int remainingTime;
+    private int remainingTime, introReal, NoOfSets;
+
 
     public VideoControllerView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -105,8 +107,11 @@ public class VideoControllerView extends FrameLayout {
     }
 
 
-    public void setAnchorView(ViewGroup view) {
+    public void setAnchorView(ViewGroup view, int IntroReal, int noOfSets,String namek) {
         mAnchor = view;
+        introReal = IntroReal;
+        NoOfSets = noOfSets;
+        vidName = namek;
 
         FrameLayout.LayoutParams frameParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -160,6 +165,9 @@ public class VideoControllerView extends FrameLayout {
         nextVideoButton = v.findViewById(R.id.next_video);
         nextVideoButton.setOnClickListener(nextPrevVideoListner);
 
+        prevVideoButton = v.findViewById(R.id.prev_video);
+        prevVideoButton.setOnClickListener(prevListner);
+
         mFfwdButton = (ImageButton) v.findViewById(R.id.ffwd);
         if (mFfwdButton != null) {
             mFfwdButton.setOnClickListener(mFfwdListener);
@@ -198,6 +206,10 @@ public class VideoControllerView extends FrameLayout {
 
         mEndTime = (TextView) v.findViewById(R.id.time);
         mCurrentTime = (TextView) v.findViewById(R.id.time_current);
+        onScreenName = v.findViewById(R.id.name);
+        onScreenName.setText(vidName);
+        timeRem = v.findViewById(R.id.time_remaining);
+        timeElapse = v.findViewById(R.id.time_elapsed);
         // mOnScreenTime = v.findViewById(R.id.on_screen_remaining_time);
 
         mFormatBuilder = new StringBuilder();
@@ -339,6 +351,7 @@ public class VideoControllerView extends FrameLayout {
     private void setST() {
         int po = mPlayer.getCurrentPosition();
         int dur = mPlayer.getDuration();
+
         int re = dur - po + 1000;
         mPlayer.setOnScreenTime(re);
     }
@@ -351,12 +364,18 @@ public class VideoControllerView extends FrameLayout {
 
         int position = mPlayer.getCurrentPosition();
         int duration = mPlayer.getDuration();
+//        if(introReal == 1){
+//            duration = duration*NoOfSets;
+//        }
         int remaining = duration - position + 1000;
         if (mProgress != null) {
             if (duration > 0) {
                 // use long to avoid overflow
                 long pos = 1000L * position / duration;
-
+                if(introReal == 1){
+                    timeRem.setText("Time Remaining \nfor this set");
+                    timeElapse.setText("Time Elapsed \nin this set");
+                }
                 mProgress.setProgress((int) pos);
                 if (mEndTime != null)
                     mEndTime.setText(stringForTime(position));
@@ -370,8 +389,11 @@ public class VideoControllerView extends FrameLayout {
             int percent = mPlayer.getBufferPercentage();
             mProgress.setSecondaryProgress(percent * 10);
         }
-
-        mPlayer.setOnScreenTime(remaining);
+        if (introReal == 1) {
+            mPlayer.setOnScreenTime(position);
+        } else {
+            mPlayer.setOnScreenTime(remaining);
+        }
 
 
         return position;
@@ -545,6 +567,14 @@ public class VideoControllerView extends FrameLayout {
             }
 
             long duration = mPlayer.getDuration();
+//            if (introReal == 1) {
+//                duration = duration * NoOfSets;
+//            }
+
+            if(introReal == 1){
+                timeRem.setText("Time Remaining \nfor this set");
+                timeElapse.setText("Time Elapsed \nin this set");
+            }
             long newposition = (duration * progress) / 1000L;
             mPlayer.seekTo((int) newposition);
             if (mCurrentTime != null)
@@ -552,7 +582,12 @@ public class VideoControllerView extends FrameLayout {
             mCurrentTime.setText(stringForTime(remainingTime));
             mEndTime.setText(stringForTime((int) newposition));
 //            mOnScreenTime.setText(stringForTime(remainingTime));
-            mPlayer.setOnScreenTime(remainingTime);
+            if (introReal == 1) {
+                mPlayer.setOnScreenTime((int) newposition);
+            } else {
+                mPlayer.setOnScreenTime(remainingTime);
+            }
+
         }
 
         public void onStopTrackingTouch(SeekBar bar) {
@@ -617,6 +652,13 @@ public class VideoControllerView extends FrameLayout {
             setProgress();
 
             show(sDefaultTimeout);
+        }
+    };
+
+    private View.OnClickListener prevListner = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            mPlayer.prevVideo();
         }
     };
 
@@ -702,6 +744,7 @@ public class VideoControllerView extends FrameLayout {
         void setOnScreenTime(int t);
 
         void nextVideo();
+        void prevVideo();
     }
 
     private static class MessageHandler extends Handler {

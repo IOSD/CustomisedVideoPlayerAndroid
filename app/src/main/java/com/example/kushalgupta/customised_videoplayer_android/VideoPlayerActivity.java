@@ -13,6 +13,8 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
@@ -28,17 +30,22 @@ import java.util.Locale;
 /**
  * Created by kushalgupta on 04/04/18.
  */
-public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, VideoControllerView.MediaPlayerControl {
+public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callback, MediaPlayer.OnPreparedListener, VideoControllerView.MediaPlayerControl, MediaPlayer.OnCompletionListener {
 
     SurfaceView videoSurface;
-    MediaPlayer player,player2;
+    MediaPlayer player, player2;
     VideoControllerView controller;
-    TextView dura,dura2;
-
-    int screenTime;
+    TextView dura, dura2,NoOfSets;
+    Boolean count;
+    int screenTime,screenTime2;
     CountDownTimer countDownTimer;
     public static final String TAG = "chla";
     ProgressDialog progressDialog;
+    Button skipIntroBtn;
+    int noOfSets = 2;
+    String videoName;
+    int IntroReal;
+    int videoNo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +53,9 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         setContentView(R.layout.activity_video_player);
         dura = findViewById(R.id.duration);
         dura2 = findViewById(R.id.duration2);
+        skipIntroBtn = findViewById(R.id.btn_skip_intro);
+        skipIntroBtn.setOnClickListener(skipIntriListner);
+        NoOfSets = findViewById(R.id.no_of_sets);
 
         videoSurface = (SurfaceView) findViewById(R.id.videoSurface);
         SurfaceHolder videoHolder = videoSurface.getHolder();
@@ -87,7 +97,10 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         controller.show();
         player.pause();
         dura.setVisibility(View.INVISIBLE);
+        dura2.setVisibility(View.INVISIBLE);
+        NoOfSets.setVisibility(View.INVISIBLE);
         if (countDownTimer != null) {
+
             countDownTimer.cancel();
         }
 
@@ -119,12 +132,19 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     public void onPrepared(MediaPlayer mp) {
         Log.d(TAG, "onPrepared: 1");
         controller.setMediaPlayer(this);
-        controller.setAnchorView((FrameLayout) findViewById(R.id.videoSurfaceContainer));
+        controller.setAnchorView((FrameLayout) findViewById(R.id.videoSurfaceContainer),IntroReal ,noOfSets,videoName);
         player.start();
+        // player.setLooping(true);
         progressDialog.dismiss();
-        dura.setVisibility(View.VISIBLE);
-        Log.d(TAG, "onPrepared: "+getDuration());
-        int gy=getDuration();
+        //dura.setVisibility(View.VISIBLE);
+        Log.d(TAG, "onPrepared: " + getDuration());
+        int gy = getDuration();
+        if(IntroReal == 1 ){
+            gy = gy * noOfSets;
+        }
+        if(countDownTimer !=null){
+            countDownTimer.cancel();
+        }
         countDownTimer = new CountDownTimer(gy, 1000) {                     //geriye sayma
 
             public void onTick(long millisUntilFinished) {
@@ -133,15 +153,45 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 long hour = (millisUntilFinished / 3600000) % 24;
                 long min = (millisUntilFinished / 60000) % 60;
                 long sec = (millisUntilFinished / 1000) % 60;
+                if (IntroReal == 0 ) {
+                    dura.setVisibility(View.VISIBLE);
+                    dura2.setVisibility(View.GONE);
+                    NoOfSets.setVisibility(View.INVISIBLE);
+                    NoOfSets.setText("Remaining Sets : " +String.valueOf(noOfSets));
+                    dura.setText(videoName + "\n" + "Starts in " + f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                    dura2.setText("Total Time Remaining : \n" +f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                    skipIntroBtn.setVisibility(View.VISIBLE);
+                }
+                else if (IntroReal == 1 ){
+                    dura.setVisibility(View.GONE);
+                    skipIntroBtn.setVisibility(View.GONE);
+                    dura2.setVisibility(View.VISIBLE);
+                    NoOfSets.setVisibility(View.VISIBLE);
+                    NoOfSets.setText("Remaining Sets : " +String.valueOf(noOfSets));
+                    dura.setText(videoName + "\n" + "Starts in " + f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                    dura2.setText("Total Time Remaining : \n" +f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
 
-                dura.setText(f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
-                // dura2.setText(f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                }
 
 
             }
 
             public void onFinish() {
                 dura.setText("00:00:00");
+                dura2.setText("00:00:00");
+                if(IntroReal == 0 && videoNo == 0){
+                    IntroReal = 1;
+                    videoNo =0;
+                }
+                else if(IntroReal == 1 && videoNo == 0){
+                    IntroReal = 0;
+                    videoNo =1;
+                }
+                else if(IntroReal == 0 && videoNo == 1){
+                    IntroReal =1;
+                    videoNo =1;
+                }
+                startNext();
             }
         }.start();
     }
@@ -193,6 +243,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         if (countDownTimer != null) {
             countDownTimer.cancel();
         }
+        dura2.setVisibility(View.GONE);
+        NoOfSets.setVisibility(View.INVISIBLE);
         player.pause();
     }
 
@@ -205,7 +257,10 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     public void start() {
         //https://drive.google.com/file/d/19-QXY7dFSHGzDMgmQ2KFQnySfGznjnC1/view?usp=sharing
         player.start();
-        dura.setVisibility(View.VISIBLE);
+//        dura.setVisibility(View.VISIBLE);
+        if(countDownTimer != null){
+            countDownTimer.cancel();
+        }
 
         countDownTimer = new CountDownTimer(screenTime, 1000) {                     //geriye sayma
 
@@ -216,11 +271,42 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 long min = (millisUntilFinished / 60000) % 60;
                 long sec = (millisUntilFinished / 1000) % 60;
 
-                dura.setText(f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                if (IntroReal == 0 ) {
+                    dura.setVisibility(View.VISIBLE);
+                    dura2.setVisibility(View.GONE);
+                    NoOfSets.setVisibility(View.INVISIBLE);
+                    NoOfSets.setText("Remaining Sets : " +String.valueOf(noOfSets));
+                    dura.setText(videoName + "\n" + "Starts in " + f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                    dura2.setText("Total Time Remaining : \n" +f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                    skipIntroBtn.setVisibility(View.VISIBLE);
+                }
+                else if (IntroReal == 1 ){
+                    dura.setVisibility(View.GONE);
+                    skipIntroBtn.setVisibility(View.GONE);
+                    dura2.setVisibility(View.VISIBLE);
+                    NoOfSets.setVisibility(View.VISIBLE);
+                    NoOfSets.setText("Remaining Sets : " +String.valueOf(noOfSets));
+                    dura.setText(videoName + "\n" + "Starts in " + f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+                    dura2.setText("Total Time Remaining : \n" +f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
+
+                }
             }
 
             public void onFinish() {
                 dura.setText("00:00:00");
+                if(IntroReal == 0 && videoNo == 0){
+                    IntroReal = 1;
+                    videoNo =0;
+                }
+                else if(IntroReal == 1 && videoNo == 0){
+                    IntroReal = 0;
+                    videoNo =1;
+                }
+                else if(IntroReal == 0 && videoNo == 1){
+                    IntroReal =1;
+                    videoNo =1;
+                }
+                startNext();
             }
         }.start();
     }
@@ -238,8 +324,17 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     @Override
     public void setOnScreenTime(int time) {
         // dura.setText(time);
-        screenTime = time + 1000;
+        if(IntroReal == 1){
+            int tempTotalDuration = getDuration();
+            int ku= tempTotalDuration - time ;
+            screenTime = tempTotalDuration*noOfSets-ku+1000;
 
+
+
+        }
+        else {
+            screenTime = time + 1000;
+        }
 
     }
 
@@ -247,6 +342,18 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     public void nextVideo() {
         if (player != null) {
 
+            if(IntroReal == 0 && videoNo == 0){
+                IntroReal = 1;
+                videoNo =0;
+            }
+            else if(IntroReal == 1 && videoNo == 0){
+                IntroReal = 0;
+                videoNo =1;
+            }
+            else if(IntroReal == 0 && videoNo == 1){
+                IntroReal =1;
+                videoNo =1;
+            }
             startNext();
 
 
@@ -285,52 +392,75 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
 //        }
     }
 
+
+    @Override
+    public void prevVideo(){
+        if (player != null) {
+
+            if(IntroReal == 0 && videoNo == 0){
+                IntroReal = 0;
+                videoNo =1;
+            }
+            else if(IntroReal == 1 && videoNo == 0){
+                IntroReal = 0;
+                videoNo =0;
+            }
+            else if(IntroReal == 0 && videoNo == 1){
+                IntroReal =0;
+                videoNo =0;
+            }
+            else if(IntroReal == 1 && videoNo == 1){
+                IntroReal = 0;
+                videoNo = 1;
+            }
+            startNext();
+
+
+        }
+    }
+
     public void startNext() {
         if (player == null) {
             player = new MediaPlayer();
             try {
                 //   player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
+                videoName = "Big Buck Bunny";
+                IntroReal = 0;
+                videoNo = 0;
                 player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
                 // player.setOnPreparedListener(this);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } else {
+        }
+        else if(IntroReal == 1 && videoNo == 0){
             player.reset();
             try {
-                //    player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                videoName = "Big Buck Bunny";
+                IntroReal = 1;
+                videoNo = 0;
+                if(countDownTimer != null){
+                    countDownTimer.cancel();
+                }
+                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
                 player.prepareAsync();
 
 
-                // player.setOnPreparedListener(this);
-                // player.setOnPreparedListener(this);
-//                player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-//                    @Override
-//                    public void onPrepared(MediaPlayer mediaPlayer) {
-//                        Log.d(TAG, "onPrepared: chla");
-//                        player.start();
-//                        dura.setVisibility(View.VISIBLE);
-//                        Toast.makeText(VideoPlayerActivity.this, "" + getDuration(), Toast.LENGTH_SHORT).show();
-//                        countDownTimer = new CountDownTimer(getDuration(), 1000) {                     //geriye sayma
-//
-//                            public void onTick(long millisUntilFinished) {
-//
-//                                NumberFormat f = new DecimalFormat("00");
-//                                long hour = (millisUntilFinished / 3600000) % 24;
-//                                long min = (millisUntilFinished / 60000) % 60;
-//                                long sec = (millisUntilFinished / 1000) % 60;
-//
-//                                dura.setText(f.format(hour) + ":" + f.format(min) + ":" + f.format(sec));
-//                            }
-//
-//                            public void onFinish() {
-//                                dura.setText("00:00:00");
-//                            }
-//                        }.start();
-//                    }
-//                });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else if(IntroReal == 0 && videoNo == 1){
+            player.reset();
+            try {
+                videoName = "Toy Story";
+                IntroReal = 0;
+                videoNo =1;
+                if(countDownTimer != null){
+                    countDownTimer.cancel();
+                }
+                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                player.prepareAsync();
 
 
             } catch (IOException e) {
@@ -338,7 +468,25 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
             }
         }
 
-        //player = new MediaPlayer();
+        else if(IntroReal == 1 && videoNo == 1){
+            player.reset();
+            try {
+                videoName = "Toy Story";
+                IntroReal = 1;
+                videoNo =1;
+                if(countDownTimer != null){
+                    countDownTimer.cancel();
+                }
+                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                player.prepareAsync();
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
         try {
             progressDialog = new ProgressDialog(this);
             progressDialog.setTitle("Please Wait");
@@ -346,11 +494,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
             progressDialog.show();
 
             player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            // player.setDataSource(this, Uri.parse("http://dl1.n3.23.cdn.perfectgirls.net/mp4/-h29-35Ni7qOjZT7hZGzdA==,1523201699/525/011/525011-full.mp4"));
-            // player.setDataSource(this, Uri.parse("http://dl2.n3.22.cdn.perfectgirls.net/mp4/HkW0SBQNq1yMVYiNUuiiMA==,1523648541/526/180/526180-full.mp4"));
-
-            //  player.setDataSource(this, Uri.parse("http://dl1.n3.23.cdn.perfectgirls.net/mp4/-h29-35Ni7qOjZT7hZGzdA==,1523201699/525/011/525011-full.mp4"));
             player.setOnPreparedListener(this);
+            player.setOnCompletionListener(this);
 
 
         } catch (IllegalArgumentException e) {
@@ -361,13 +506,70 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
             e.printStackTrace();
 
         }
-    }}
+    }
+
+    @Override
+    public void onCompletion(MediaPlayer mediaPlayer) {
+        if(IntroReal == 1) {
+            if(noOfSets > 0) {
+                player.seekTo(0);
+                player.start();
+                noOfSets--;
+            }
+            else {
+
+                if(IntroReal == 1 && videoNo == 0){
+                    IntroReal = 0;
+                    videoNo =1;
+                    noOfSets =2;
+                    startNext();
+                }
+
+                if(IntroReal == 1 && videoNo == 1){
+                    IntroReal =0;
+                    videoNo =0;
+                    noOfSets =2;
+                    startNext();
+                }
 
 
 
+            }
+
+        }
+
+        if(IntroReal == 0 && videoNo == 0){
+            IntroReal = 1;
+            videoNo =0;
+            startNext();
+
+        }
+
+        if(IntroReal == 0 && videoNo == 1){
+            IntroReal =1;
+            videoNo =1;
+            startNext();
+        }
+        //    startNext();
 
 
+    }
 
-// End VideoMediaController.MediaPlayerControl
+    private View.OnClickListener skipIntriListner = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            dura.setVisibility(View.INVISIBLE);
+            if( videoNo == 0) {
+                IntroReal = 1;
+                videoNo = 0;
+            }
+            else if(videoNo == 1){
+                IntroReal =1;
+                videoNo =1;
+            }
+            startNext();
+        }
+    };
 
 
+}
