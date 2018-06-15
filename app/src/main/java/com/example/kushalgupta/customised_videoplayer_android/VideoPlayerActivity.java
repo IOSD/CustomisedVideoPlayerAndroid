@@ -502,10 +502,13 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
             player = new MediaPlayer();
             try {
                 //   player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                videoName = "Big Buck Bunny";
+                videoName = "Stack PushUp intro";
                 IntroReal = 0;
                 videoNo = 0;
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                //player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stackpushupintro);
+                player.setDataSource(this,video);
+
                 // player.setOnPreparedListener(this);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -533,13 +536,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 1 && videoNo == 0) {
             player.reset();
             try {
-                videoName = "Big Buck Bunny";
+                videoName = "Stack PushUp";
                 IntroReal = 1;
                 videoNo = 0;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stackpushupsingle);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -549,13 +553,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 0 && videoNo == 1) {
             player.reset();
             try {
-                videoName = "Toy Story";
+                videoName = "Superman PushUp intro";
                 IntroReal = 0;
                 videoNo = 1;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.supermanpushupintro);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -565,13 +570,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 1 && videoNo == 1) {
             player.reset();
             try {
-                videoName = "Toy Story";
+                videoName = "Superman Pushup";
                 IntroReal = 1;
                 videoNo = 1;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.supermanpushup);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -583,13 +589,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 0 && videoNo == 2) {
             player.reset();
             try {
-                videoName = "Big Buck Bunny";
+                videoName = "Stack PushUp";
                 IntroReal = 0;
                 videoNo = 2;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stackpushupsingle);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -599,13 +606,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 1 && videoNo == 2) {
             player.reset();
             try {
-                videoName = "Big Buck Bunny";
+                videoName = "SuperMan PushUp";
                 IntroReal = 1;
                 videoNo = 2;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.supermanpushup);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 

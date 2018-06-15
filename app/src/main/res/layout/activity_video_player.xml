@@ -27,6 +27,7 @@
             android:layout_height="wrap_content"
             android:gravity="left"
             android:textColor="#fff"
+            android:background="#28000000"
             android:textSize="20dp"
             android:textStyle="bold" />
         <TextView
@@ -35,9 +36,9 @@
             android:layout_height="wrap_content"
             android:gravity="left"
             android:textColor="#fff"
-            android:textSize="20dp"
-            android:textStyle="bold" />
-
+            android:background="#28000000"
+            android:textSize="20sp"
+            android:textStyle="italic" />
 
 
         <TextView
@@ -47,25 +48,28 @@
             android:layout_gravity="right"
             android:gravity="center"
             android:textColor="#fff"
+            android:background="#28000000"
             android:textSize="20dp"
-            android:textStyle="bold" />
+            android:textStyle="normal" />
 
         <Button
             android:id="@+id/btn_skip_intro"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="right"
-            android:background="#07000000"
-            android:text="Skip Intro"
+            android:background="#28000000"
+            android:text="Skip >>>"
+            android:textStyle="italic"
             android:textColor="#fff" />
         <TextView
             android:id="@+id/countInBetweenScreen"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal|center_vertical"
             android:textColor="#fff"
+            android:background="#28000000"
             android:gravity="center"
-            android:textSize="130dp"
+            android:textSize="130sp"
             android:textAppearance="?android:textAppearanceLarge"/>
 
 
