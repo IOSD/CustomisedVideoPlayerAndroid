@@ -13,6 +13,7 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -24,8 +25,10 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.Chronometer;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
@@ -161,11 +164,41 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         linearLayout.removeAllViews();
         View view = getLayoutInflater().inflate(R.layout.feed_back,linearLayout,false);
         linearLayout.addView(view);
+
         Button restart = (Button)view.findViewById(R.id.restart);
         restart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 recreate();
+            }
+        });
+
+        NumberPicker numberPicker = (NumberPicker)view.findViewById(R.id.numberPicker);
+        numberPicker.setMinValue(0);
+        numberPicker.setMaxValue(10);
+        numberPicker.setValue(4);
+        numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                //set value here
+            }
+        });
+
+        final Button comment = (Button) view.findViewById(R.id.commentButton);
+        comment.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder alert = new AlertDialog.Builder(VideoPlayerActivity.this);
+                alert.setMessage("Write a comment");
+                final EditText edittext = new EditText(VideoPlayerActivity.this);
+                alert.setView(edittext);
+                alert.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        finish();
+                    }
+                });
+                alert.show();
+
             }
         });
     }
