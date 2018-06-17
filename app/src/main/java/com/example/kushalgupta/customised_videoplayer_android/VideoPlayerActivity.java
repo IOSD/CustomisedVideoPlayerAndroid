@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -13,15 +14,20 @@ import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.Chronometer;
+import android.widget.CompoundButton;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -59,6 +65,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     private TextToSpeech tts;
     int flag = 0;
 
+    CheckBox soundOn;
+    Boolean isSoundOn = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,10 +78,26 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         NoOfSets = findViewById(R.id.no_of_sets);
         middleCount = findViewById(R.id.countInBetweenScreen);
         tts = new TextToSpeech(this, this);
+        soundOn = findViewById(R.id.muteCheckBox);
 
         videoSurface = (SurfaceView) findViewById(R.id.videoSurface);
         SurfaceHolder videoHolder = videoSurface.getHolder();
         videoHolder.addCallback(this);
+
+        soundOn.setChecked(isSoundOn);
+        soundOn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    player.setVolume(1, 1);
+                    isSoundOn = true;
+                }
+                else {
+                    player.setVolume(0,0);
+                    isSoundOn = false;
+                }
+            }
+        });
 
         // player = new MediaPlayer();
         controller = new VideoControllerView(this);
@@ -119,6 +143,31 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+    }
+
+    private void showFeedBack(){
+        //cleaning up
+        if(player!=null)
+            player.stop();
+
+        controller.hide();
+        controller.setEnabled(false);
+
+        tts.stop();
+        tts.shutdown();
+
+        //removing all views and placing feedback view in its place
+        LinearLayout linearLayout = findViewById(R.id.video_container);
+        linearLayout.removeAllViews();
+        View view = getLayoutInflater().inflate(R.layout.feed_back,linearLayout,false);
+        linearLayout.addView(view);
+        Button restart = (Button)view.findViewById(R.id.restart);
+        restart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recreate();
+            }
+        });
     }
 
     @Override
@@ -243,6 +292,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 } else if (IntroReal == 0 && videoNo == 2) {
                     IntroReal = 1;
                     videoNo = 2;
+                } else if(IntroReal==1 &&videoNo==2){
+                    cancel();
                 }
                 startNext();
             }
@@ -376,6 +427,9 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 } else if (IntroReal == 0 && videoNo == 2) {
                     IntroReal = 1;
                     videoNo = 2;
+                } else if(IntroReal==1 && videoNo==2){
+                    cancel();
+                    return;
                 }
                 startNext();
             }
@@ -426,8 +480,10 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 IntroReal = 1;
                 videoNo = 2;
             } else if (IntroReal == 1 && videoNo == 2) {
-                IntroReal = 0;
-                videoNo = 0;
+//                IntroReal = 0;
+//                videoNo = 0;
+                showFeedBack();
+                return;
             }
             startNext();
 
@@ -661,14 +717,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                     noOfSets--;
                 } else {
 
-                    if (IntroReal == 1 && videoNo == 0) {
+                    if (videoNo == 0) {
                         IntroReal = 0;
                         videoNo = 1;
                         noOfSets = 2;
                         startNext();
                     }
 
-                    if (IntroReal == 1 && videoNo == 1) {
+                    if (videoNo == 1) {
                         IntroReal = 0;
                         videoNo = 2;
                         noOfSets = 2;
@@ -687,7 +743,7 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                         player.start();
                         noOfSets--;
                     } else {
-                        finish();
+                        showFeedBack();
 
 //                        player.reset();
 //                        try {
@@ -711,7 +767,9 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                     }
                     middleCount.setVisibility(View.VISIBLE);
                     middleCount.setText(String.valueOf(currentSet));
-                    tts.speak(String.valueOf(currentSet), TextToSpeech.QUEUE_FLUSH, null);
+                    if(isSoundOn) {
+                        tts.speak(String.valueOf(currentSet), TextToSpeech.QUEUE_FLUSH, null);
+                    }
                     YoYo.with(Techniques.ZoomIn).duration(2000).playOn(middleCount);
                     YoYo.with(Techniques.FadeOut).duration(1000).delay(2000).playOn(middleCount);
                     // middleCount.setVisibility(View.INVISIBLE);

@@ -10,7 +10,6 @@
 
 
     <FrameLayout
-
         android:id="@+id/videoSurfaceContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -72,7 +71,14 @@
             android:textSize="130sp"
             android:textAppearance="?android:textAppearanceLarge"/>
 
-
+        <CheckBox
+            android:id="@+id/muteCheckBox"
+            android:layout_gravity="start|bottom"
+            android:layout_width="wrap_content"
+            android:background="#28000000"
+            android:checked="true"
+            android:button="@drawable/mute_selector"
+            android:layout_height="wrap_content" />
     </FrameLayout>
 
 
