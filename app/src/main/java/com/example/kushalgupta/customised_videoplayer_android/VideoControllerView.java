@@ -39,7 +39,7 @@ public class VideoControllerView extends FrameLayout {
     private TextView mEndTime, mCurrentTime, mOnScreenTime,onScreenName,timeRem,timeElapse;
     private boolean mShowing;
     private boolean mDragging;
-    private static final int sDefaultTimeout = 3000;
+    private static final int sDefaultTimeout = 2000;
     private static final int FADE_OUT = 1;
     private static final int SHOW_PROGRESS = 2;
     private boolean mUseFastForward;
@@ -483,11 +483,11 @@ public class VideoControllerView extends FrameLayout {
 
         if (mPlayer.isPlaying()) {
             // onScreenControllerShow();
-            mPauseButton.setImageResource(R.drawable.ic_media_pause);
+            mPauseButton.setImageResource(R.drawable.ic_pause_circle_outline_black_24dp);
 
         } else {
             // onScreenControllerHide();
-            mPauseButton.setImageResource(R.drawable.ic_media_play);
+            mPauseButton.setImageResource(R.drawable.ic_play_circle_outline_white_24dp);
         }
     }
 

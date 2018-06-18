@@ -2,7 +2,9 @@ package com.example.kushalgupta.customised_videoplayer_android;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -10,15 +12,25 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.Chronometer;
+import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -56,6 +68,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
     private TextToSpeech tts;
     int flag = 0;
 
+    CheckBox soundOn;
+    Boolean isSoundOn = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,10 +81,26 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         NoOfSets = findViewById(R.id.no_of_sets);
         middleCount = findViewById(R.id.countInBetweenScreen);
         tts = new TextToSpeech(this, this);
+        soundOn = findViewById(R.id.muteCheckBox);
 
         videoSurface = (SurfaceView) findViewById(R.id.videoSurface);
         SurfaceHolder videoHolder = videoSurface.getHolder();
         videoHolder.addCallback(this);
+
+        soundOn.setChecked(isSoundOn);
+        soundOn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    player.setVolume(1, 1);
+                    isSoundOn = true;
+                }
+                else {
+                    player.setVolume(0,0);
+                    isSoundOn = false;
+                }
+            }
+        });
 
         // player = new MediaPlayer();
         controller = new VideoControllerView(this);
@@ -102,6 +132,76 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
 //        }
     }
 
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        hideNavAndStatus();
+    }
+
+    private void hideNavAndStatus(){
+        //hides navigationbar and statusbar
+        videoSurface.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+    }
+
+    private void showFeedBack(){
+        //cleaning up
+        if(player!=null)
+            player.stop();
+
+        controller.hide();
+        controller.setEnabled(false);
+
+        tts.stop();
+        tts.shutdown();
+
+        //removing all views and placing feedback view in its place
+        LinearLayout linearLayout = findViewById(R.id.video_container);
+        linearLayout.removeAllViews();
+        View view = getLayoutInflater().inflate(R.layout.feed_back,linearLayout,false);
+        linearLayout.addView(view);
+
+        Button restart = (Button)view.findViewById(R.id.restart);
+        restart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recreate();
+            }
+        });
+
+        NumberPicker numberPicker = (NumberPicker)view.findViewById(R.id.numberPicker);
+        numberPicker.setMinValue(0);
+        numberPicker.setMaxValue(10);
+        numberPicker.setValue(4);
+        numberPicker.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                //set value here
+            }
+        });
+
+        final Button comment = (Button) view.findViewById(R.id.commentButton);
+        comment.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder alert = new AlertDialog.Builder(VideoPlayerActivity.this);
+                alert.setMessage("Write a comment");
+                final EditText edittext = new EditText(VideoPlayerActivity.this);
+                alert.setView(edittext);
+                alert.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        finish();
+                    }
+                });
+                alert.show();
+
+            }
+        });
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -111,10 +211,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         dura2.setVisibility(View.INVISIBLE);
         NoOfSets.setVisibility(View.INVISIBLE);
         if (countDownTimer != null) {
-
             countDownTimer.cancel();
         }
-
         return false;
     }
 
@@ -146,7 +244,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         controller.setAnchorView((FrameLayout) findViewById(R.id.videoSurfaceContainer), IntroReal, noOfSets, videoName);
         player.start();
         // player.setLooping(true);
-        progressDialog.dismiss();
+        if(progressDialog!=null)
+            progressDialog.dismiss();
         //dura.setVisibility(View.VISIBLE);
         Log.d(TAG, "onPrepared: " + getDuration());
         int gy = getDuration();
@@ -226,6 +325,8 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 } else if (IntroReal == 0 && videoNo == 2) {
                     IntroReal = 1;
                     videoNo = 2;
+                } else if(IntroReal==1 &&videoNo==2){
+                    cancel();
                 }
                 startNext();
             }
@@ -359,6 +460,9 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 } else if (IntroReal == 0 && videoNo == 2) {
                     IntroReal = 1;
                     videoNo = 2;
+                } else if(IntroReal==1 && videoNo==2){
+                    cancel();
+                    return;
                 }
                 startNext();
             }
@@ -367,12 +471,11 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
 
     @Override
     public boolean isFullScreen() {
-        return false;
+        return true;
     }
 
     @Override
     public void toggleFullScreen() {
-
     }
 
     @Override
@@ -410,8 +513,10 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                 IntroReal = 1;
                 videoNo = 2;
             } else if (IntroReal == 1 && videoNo == 2) {
-                IntroReal = 0;
-                videoNo = 0;
+//                IntroReal = 0;
+//                videoNo = 0;
+                showFeedBack();
+                return;
             }
             startNext();
 
@@ -486,10 +591,13 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
             player = new MediaPlayer();
             try {
                 //   player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                videoName = "Big Buck Bunny";
+                videoName = "Stack PushUp intro";
                 IntroReal = 0;
                 videoNo = 0;
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                //player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stackpushupintro);
+                player.setDataSource(this,video);
+
                 // player.setOnPreparedListener(this);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -517,13 +625,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 1 && videoNo == 0) {
             player.reset();
             try {
-                videoName = "Big Buck Bunny";
+                videoName = "Stack PushUp";
                 IntroReal = 1;
                 videoNo = 0;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stackpushupsingle);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -533,13 +642,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 0 && videoNo == 1) {
             player.reset();
             try {
-                videoName = "Toy Story";
+                videoName = "Superman PushUp intro";
                 IntroReal = 0;
                 videoNo = 1;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.supermanpushupintro);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -549,13 +659,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 1 && videoNo == 1) {
             player.reset();
             try {
-                videoName = "Toy Story";
+                videoName = "Superman Pushup";
                 IntroReal = 1;
                 videoNo = 1;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://www.html5videoplayer.net/videos/toystory.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.supermanpushup);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -567,13 +678,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 0 && videoNo == 2) {
             player.reset();
             try {
-                videoName = "Big Buck Bunny";
+                videoName = "Stack PushUp";
                 IntroReal = 0;
                 videoNo = 2;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.stackpushupsingle);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -583,13 +695,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         } else if (IntroReal == 1 && videoNo == 2) {
             player.reset();
             try {
-                videoName = "Big Buck Bunny";
+                videoName = "SuperMan PushUp";
                 IntroReal = 1;
                 videoNo = 2;
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
-                player.setDataSource("http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4");
+                Uri video = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.supermanpushup);
+                player.setDataSource(this,video);
                 player.prepareAsync();
 
 
@@ -599,10 +712,18 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
         }
 
         try {
-            progressDialog = new ProgressDialog(this);
-            progressDialog.setTitle("Please Wait");
-            progressDialog.setMessage("Loading ... ");
-            progressDialog.show();
+                progressDialog = new ProgressDialog(this);
+                progressDialog.setTitle("Please Wait");
+                progressDialog.setMessage("Loading ... ");
+
+                progressDialog.setCancelable(false);
+                progressDialog.show();
+                progressDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        hideNavAndStatus();
+                    }
+                });
 
             player.setAudioStreamType(AudioManager.STREAM_MUSIC);
             player.setOnPreparedListener(this);
@@ -629,14 +750,14 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                     noOfSets--;
                 } else {
 
-                    if (IntroReal == 1 && videoNo == 0) {
+                    if (videoNo == 0) {
                         IntroReal = 0;
                         videoNo = 1;
                         noOfSets = 2;
                         startNext();
                     }
 
-                    if (IntroReal == 1 && videoNo == 1) {
+                    if (videoNo == 1) {
                         IntroReal = 0;
                         videoNo = 2;
                         noOfSets = 2;
@@ -655,7 +776,7 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                         player.start();
                         noOfSets--;
                     } else {
-                        finish();
+                        showFeedBack();
 
 //                        player.reset();
 //                        try {
@@ -679,7 +800,9 @@ public class VideoPlayerActivity extends Activity implements SurfaceHolder.Callb
                     }
                     middleCount.setVisibility(View.VISIBLE);
                     middleCount.setText(String.valueOf(currentSet));
-                    tts.speak(String.valueOf(currentSet), TextToSpeech.QUEUE_FLUSH, null);
+                    if(isSoundOn) {
+                        tts.speak(String.valueOf(currentSet), TextToSpeech.QUEUE_FLUSH, null);
+                    }
                     YoYo.with(Techniques.ZoomIn).duration(2000).playOn(middleCount);
                     YoYo.with(Techniques.FadeOut).duration(1000).delay(2000).playOn(middleCount);
                     // middleCount.setVisibility(View.INVISIBLE);
